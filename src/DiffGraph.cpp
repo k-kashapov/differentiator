@@ -42,13 +42,53 @@ static void LinkTreeNodes (TNode *src)
 
 void PrintNodeDot (TNode *node)
 {
+    const char *shape = "rectangle";
+    const char *color = "black";
+
+    switch (node->type)
+    {
+        case TYPE_CONST:
+            color = "purple";
+            break;
+        case TYPE_VAR:
+            color = "pink";
+            shape = "ellipse";
+            break;
+        case TYPE_OP:
+            shape = "diamond";
+            switch ((char) node->data)
+            {
+                case '+':
+                    color = "lightgreen";
+                    break;
+                case '-':
+                    color = "cornflowerblue";
+                    break;
+                case '*':
+                    color = "gold";
+                    break;
+                case '/':
+                    color = "orange";
+                    break;
+                case '^':
+                    color = "aqua";
+                    break;
+                default:
+                    LOG_ERROR ("Graph build: Invalid operation: %lf, node %p\n",
+                                , node->data, node);
+            }
+            break;
+        default:
+            LOG_ERROR ("Graph build: Invalid node type: %d, node %p\n",
+                        , node->type, node);
+    }
     fprintf (Graph_file,
                 "NODE%p"
                 "["
-                    "shape=rectangle, style = \"rounded,filled\", "
+                    "shape=%s, style = \"rounded,filled\", "
                     "fillcolor=\"%s\", "
                     "label = \"",
-                    node, node->left ? "lightblue" : "lime");
+                    node, shape, color);
 
     switch (node->type)
     {
@@ -60,7 +100,7 @@ void PrintNodeDot (TNode *node)
             fprintf (Graph_file, "%.3lf\n", node->data);
             break;
         default:
-            LOG_ERROR ("Invalid node type: %d, node %p\n",
+            LOG_ERROR ("Graph build: Invalid node type: %d, node %p\n",
                         , node->type, node);
     }
 

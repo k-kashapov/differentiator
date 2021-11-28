@@ -21,7 +21,6 @@ struct TNode
 struct Tree
 {
     TNode *root;
-    long size;
 };
 
 enum EXIT_CODES
@@ -32,24 +31,24 @@ enum EXIT_CODES
 
 typedef void (*NodeAction) (TNode *);
 
-Tree *CreateTree (tree_elem value LOG_ARGS_IN(,));
+Tree *CreateTree (tree_elem value);
 
-TNode *GetRoot (Tree *tree LOG_ARGS_IN(,));
+TNode *GetRoot (Tree *tree);
 
-TNode *CreateNode (tree_elem value LOG_ARGS_IN(,));
+TNode *CreateNode (tree_elem value, int type = 0, TNode *left = NULL, TNode *right = NULL);
 
-TNode *AddNodeLeft (TNode *node, tree_elem value LOG_ARGS_IN(,));
+TNode *AddNodeLeft (TNode *node, tree_elem value);
 
-TNode *AddNodeRight (TNode *node, tree_elem value LOG_ARGS_IN(,));
+TNode *AddNodeRight (TNode *node, tree_elem value);
 
-void TreeNodePrint (TNode *node LOG_ARGS_IN(,));
+void TreeNodePrint (TNode *node);
 
-TNode *VisitNode (TNode *node, NodeAction pre, NodeAction in, NodeAction post LOG_ARGS_IN(,));
+TNode *VisitNode (TNode *node, NodeAction pre, NodeAction in, NodeAction post);
 
-int64_t TreeOk (Tree *tree LOG_ARGS_IN(,));
+int64_t TreeOk (Tree *tree);
 
-int64_t NodeOk (TNode *node LOG_ARGS_IN(,));
+int64_t NodeOk (TNode *node);
 
-int DestructNode (TNode *node LOG_ARGS_IN(,));
+int DestructNode (TNode *node);
 
-int DestructTree (Tree *tree LOG_ARGS_IN(,));
+int DestructTree (Tree *tree);

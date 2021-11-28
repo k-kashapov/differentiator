@@ -2,4 +2,7 @@
 *.png
 *.o
 *.html
+*.dot
 
+*.dot
+dotInput.dot

@@ -1,14 +1,20 @@
 #include "Diff.h"
 #include "files.h"
 
-#define OP_CASE(op)                                                             \
-    case *#op:                                                                  \
-        result = l_val op r_val;                                                \
-        break
+#define DL  DiffNode (node->left, param)
+#define DR  DiffNode (node->right, param)
+#define CR  CopyNode (node->right)
+#define CL  CopyNode (node->left)
+#define ADD(l, r) CreateNode ('+', TYPE_OP, l, r)
+#define SUB(l, r) CreateNode ('-', TYPE_OP, l, r)
+#define MUL(l, r) CreateNode ('*', TYPE_OP, l, r)
+#define DIV(l, r) CreateNode ('/', TYPE_OP, l, r)
+#define POW(l, r) CreateNode ('^', TYPE_OP, l, r)
 
 static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
 {
-    printf ("curr char is %c (%d)\n", *target, *target);
+    static int brackets = 0;
+    printf ("---------\ncurr char is %c (%d)\n", *target, *target);
     if (isalnum (*target))
     {
         if (isalpha (*target))
@@ -32,7 +38,7 @@ static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
 
             (*curr_node)->data = const_value;
             (*curr_node)->type = TYPE_CONST;
-            *curr += (size_t) bytes_read;
+            *curr += (size_t) bytes_read - 1;
         }
         return OK;
     }
@@ -40,6 +46,7 @@ static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
     switch (*target)
     {
         case '(':
+            brackets++;
             if (!(*curr_node)->left)
             {
                 AddNodeLeft (*curr_node, 0);
@@ -58,8 +65,10 @@ static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
             }
             break;
         case ')':
+            brackets--;
             *curr_node = (*curr_node)->parent;
             break;
+        case '^': [[fallthrough]];
         case '+': [[fallthrough]];
         case '-': [[fallthrough]];
         case '*': [[fallthrough]];
@@ -71,6 +80,13 @@ static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
             break;
     }
 
+    if (brackets < 0)
+    {
+        LOG_ERROR ("Incorrect bracket sequence!\n");
+        return INCORR_BRACKET_SEQ;
+    }
+
+    printf ("curr data is %c (%lf)\n", (char)(*curr_node)->data, (*curr_node)->data);
     return OK;
 }
 
@@ -117,46 +133,77 @@ int BuildTreeFromFile (Config *io_config, Tree *tree)
     return OK;
 }
 
-Tree *DiffTree (Tree *src_tree)
+TNode *CopyNode (TNode *src)
 {
-    Tree *res_tree = CreateTree (0);
+    if (!src) return NULL;
+    TNode *cpy = CreateNode (src->data);
+    cpy->type = src->type;
 
+    if (src->left)
+    {
+        cpy->left  = CopyNode (src->left);
+    }
 
+    if (src->right)
+    {
+        cpy->right = CopyNode (src->right);
+    }
+
+    return cpy;
+}
+
+Tree *DiffTree (Tree *src_tree, char param)
+{
+    Tree *res_tree = (Tree*) calloc (1, sizeof (Tree));
+    if (!res_tree)
+    {
+        LOG_ERROR ("CREATE TREE FAILED\n");
+    }
+
+    res_tree->root = DiffNode (src_tree->root, param);
+
+    TreeOk (res_tree);
 
     return res_tree;
 }
 
-int DiffNode (TNode *node)
+TNode *DiffNode (TNode *node, char param)
 {
-
-
-    return OK;
-}
-
-double Calculate (Tree *tree)
-{
-    return CalculateNode (GetRoot (tree));
-}
-
-double CalculateNode (TNode *node)
-{
-    double result = 0;
-
-    if (node->type == TYPE_OP)
+    switch (node->type)
     {
-        double l_val = CalculateNode (node->left);
-        double r_val = CalculateNode (node->right);
-        switch ((char) node->data)
-        {
-            OP_CASE (+);
-            OP_CASE (-);
-            OP_CASE (*);
-            OP_CASE (/);
-            default:
-                LOG_ERROR ("Unknown operation %d\n", , (char) node->data);
-                return 0;
-        }
+        case TYPE_CONST:
+            return CreateNode (0, TYPE_CONST);
+        case TYPE_VAR:
+            if ((char) node->data == param)
+            {
+                return CreateNode (1, TYPE_CONST);
+            }
+            else
+            {
+                return CreateNode (0, TYPE_CONST);
+            }
+        case TYPE_OP:
+            switch ((char) node->data)
+            {
+                case '+':
+                    return ADD (DL, DR);
+                case '-':
+                    return SUB (DL, DR);
+                case '*':
+                    return ADD (MUL (DL, CR), MUL (CL, DR));
+                case '/':
+                    return DIV (SUB (MUL (DL, CR), MUL (DR, CL)), MUL (CR, CR));
+                case '^':
+                    return MUL (MUL (CR, POW (CL, SUB (CR, CreateNode (1, TYPE_CONST)))), DL);
+                default:
+                    LOG_ERROR ("Invalid operation type: %ld; node %p",
+                                , node->data, node);
+            }
+            break;
+        default:
+            LOG_ERROR ("Invalid node type: %d; node %p",
+                        , node->data, node);
     }
 
-    return result;
+    return NULL;
 }

@@ -2,7 +2,7 @@
 
 const int POISON = 0x42;
 
-Tree *CreateTree (tree_elem value LOG_ARGS_IN(,))
+Tree *CreateTree (tree_elem value)
 {
     Tree *tree = (Tree*) calloc (1, sizeof (Tree));
     if (!tree)
@@ -13,19 +13,17 @@ Tree *CreateTree (tree_elem value LOG_ARGS_IN(,))
     TNode *init_node = CreateNode (value);
     tree->root = init_node;
 
-    tree->size = 1;
-
     TreeOk (tree);
 
     return tree;
 }
 
-TNode *GetRoot (Tree *tree LOG_ARGS_IN(,))
+TNode *GetRoot (Tree *tree)
 {
     return tree->root;
 }
 
-TNode *CreateNode (tree_elem value LOG_ARGS_IN(,))
+TNode *CreateNode (tree_elem value, int type, TNode *left, TNode *right)
 {
     TNode *node_ptr = (TNode *) calloc (1, sizeof (TNode));
     if (!node_ptr)
@@ -34,14 +32,15 @@ TNode *CreateNode (tree_elem value LOG_ARGS_IN(,))
     }
 
     node_ptr->data   = value;
-    node_ptr->left   = NULL;
-    node_ptr->right  = NULL;
+    node_ptr->left   = left;
+    node_ptr->right  = right;
     node_ptr->parent = NULL;
+    node_ptr->type   = type;
 
     return node_ptr;
 }
 
-TNode *AddNodeLeft (TNode *node, tree_elem value LOG_ARGS_IN(,))
+TNode *AddNodeLeft (TNode *node, tree_elem value)
 {
     TNode *node_ptr  = CreateNode (value);
     node->left       = node_ptr;
@@ -50,7 +49,7 @@ TNode *AddNodeLeft (TNode *node, tree_elem value LOG_ARGS_IN(,))
     return node_ptr;
 }
 
-TNode *AddNodeRight (TNode *node, tree_elem value LOG_ARGS_IN(,))
+TNode *AddNodeRight (TNode *node, tree_elem value)
 {
     TNode *node_ptr = CreateNode (value);
     node->right     = node_ptr;
@@ -59,13 +58,13 @@ TNode *AddNodeRight (TNode *node, tree_elem value LOG_ARGS_IN(,))
     return node_ptr;
 }
 
-void TreeNodePrint (TNode *node LOG_ARGS_IN(,))
+void TreeNodePrint (TNode *node)
 {
     printf (TYPE_SPEC, node->data);
     return;
 }
 
-TNode *VisitNode (TNode *node, NodeAction pre, NodeAction in, NodeAction post LOG_ARGS_IN(,))
+TNode *VisitNode (TNode *node, NodeAction pre, NodeAction in, NodeAction post)
 {
     if (!node) return 0;
 
@@ -90,7 +89,7 @@ TNode *VisitNode (TNode *node, NodeAction pre, NodeAction in, NodeAction post LO
     return 0;
 }
 
-int64_t TreeOk (Tree *tree LOG_ARGS_IN(,))
+int64_t TreeOk (Tree *tree)
 {
     int64_t err = 0;
 
@@ -99,7 +98,7 @@ int64_t TreeOk (Tree *tree LOG_ARGS_IN(,))
     return err;
 }
 
-int64_t NodeOk (TNode *node LOG_ARGS_IN(,))
+int64_t NodeOk (TNode *node)
 {
     int64_t err = 0;
     if (!node)
@@ -121,7 +120,7 @@ int64_t NodeOk (TNode *node LOG_ARGS_IN(,))
     return err;
 }
 
-int DestructNode (TNode *node LOG_ARGS_IN(,))
+int DestructNode (TNode *node)
 {
     if (node->left)
     {
@@ -139,7 +138,7 @@ int DestructNode (TNode *node LOG_ARGS_IN(,))
     return 0;
 }
 
-int DestructTree (Tree *tree LOG_ARGS_IN(,))
+int DestructTree (Tree *tree)
 {
     DestructNode (GetRoot (tree));
     free (tree);

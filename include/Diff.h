@@ -10,11 +10,11 @@ enum TYPES
 
 enum UNARY_FUNCS
 {
-    SIN  = 0x1,
-    COS  = 0x2,
-    ASIN = 0x3,
-    ACOS = 0x4,
-    LN   = 0x5,
+    SIN  = 'sin',
+    COS  = 'cos',
+    ASIN = 'asin',
+    ACOS = 'acos',
+    LN   = 'ln',
 };
 
 enum DIFF_EXIT_CODES
@@ -23,6 +23,7 @@ enum DIFF_EXIT_CODES
     CONST_READ_ERR       = 0x102,
     BUILD_FROM_FILE_FAIL = 0x104,
     INCORR_BRACKET_SEQ   = 0x108,
+    WORD_READ_ERR        = 0x110,
 };
 
 int BuildTreeFromFile (Config *io_config, Tree *tree);
@@ -38,3 +39,5 @@ TNode *CopyNode (TNode *src);
 Tree *DiffTree (Tree *src_tree, char param = 'x');
 
 TNode *DiffNode (TNode *node, char param = 'x');
+
+int DisplacementHash (const void *data, size_t len);

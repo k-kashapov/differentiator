@@ -11,37 +11,9 @@
 #define DIV(l, r) CreateNode ('/', TYPE_OP, l, r)
 #define POW(l, r) CreateNode ('^', TYPE_OP, l, r)
 
-static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
+static int ProcessSymbol (const char *target, TNode **curr_node)
 {
     static int brackets = 0;
-    printf ("---------\ncurr char is %c (%d)\n", *target, *target);
-    if (isalnum (*target))
-    {
-        if (isalpha (*target))
-        {
-            (*curr_node)->data = (tree_elem) (*target);
-            (*curr_node)->type = TYPE_VAR;
-        }
-        else
-        {
-            double const_value = 0;
-            int bytes_read = 0;
-
-            int read = sscanf (target, "%lf%n", &const_value, &bytes_read);
-            printf ("Const value read = %lf\n", const_value);
-            if (!read)
-            {
-                LOG_ERROR ("Const value read err: target = %s",
-                            , target);
-                return CONST_READ_ERR;
-            }
-
-            (*curr_node)->data = const_value;
-            (*curr_node)->type = TYPE_CONST;
-            *curr += (size_t) bytes_read - 1;
-        }
-        return OK;
-    }
 
     switch (*target)
     {
@@ -84,6 +56,64 @@ static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
     {
         LOG_ERROR ("Incorrect bracket sequence!\n");
         return INCORR_BRACKET_SEQ;
+    }
+
+    return OK;
+}
+
+static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
+{
+    printf ("---------\ncurr char is %c (%d)\n", *target, *target);
+    if (isalnum (*target))
+    {
+        if (isalpha (*target))
+        {
+            char word[5] = {};
+            int bytes_read = 0;
+            int read = sscanf (target, "%[^)]%n", word, &bytes_read);
+
+            if (bytes_read < 1 || read == 0)
+            {
+                LOG_ERROR ("Invalid letters sequence: %s", , target);
+                return WORD_READ_ERR;
+            }
+            else if (bytes_read == 1)
+            {
+                (*curr_node)->data = (tree_elem) (*target);
+                (*curr_node)->type = TYPE_VAR;
+            }
+            else
+            {
+                printf ("word scanned = %s\n", word);
+                *curr += (size_t) bytes_read - 1;
+            }
+        }
+        else
+        {
+            double const_value = 0;
+            int bytes_read = 0;
+
+            int read = sscanf (target, "%lf%n", &const_value, &bytes_read);
+            printf ("Const value read = %lf\n", const_value);
+            if (!read)
+            {
+                LOG_ERROR ("Const value read err: target = %s",
+                            , target);
+                return CONST_READ_ERR;
+            }
+
+            (*curr_node)->data = const_value;
+            (*curr_node)->type = TYPE_CONST;
+            *curr += (size_t) bytes_read - 1;
+        }
+
+        return OK;
+    }
+
+    int sym_error = ProcessSymbol (target, curr_node);
+    if (sym_error)
+    {
+        return sym_error;
     }
 
     printf ("curr data is %c (%lf)\n", (char)(*curr_node)->data, (*curr_node)->data);
@@ -196,7 +226,7 @@ TNode *DiffNode (TNode *node, char param)
                 case '^':
                     return MUL (MUL (CR, POW (CL, SUB (CR, CreateNode (1, TYPE_CONST)))), DL);
                 default:
-                    LOG_ERROR ("Invalid operation type: %ld; node %p",
+                    LOG_ERROR ("Invalid operation type: %ld; node %p\n",
                                 , node->data, node);
             }
             break;
@@ -206,4 +236,19 @@ TNode *DiffNode (TNode *node, char param)
     }
 
     return NULL;
+}
+
+int DisplacementHash (const void *data, size_t len)
+{
+    const char *src  = (const char *) data;
+    int result = 0;
+
+    for (size_t i = 0; i < len; i++)
+    {
+        printf ("letter is %c (%x)\n", src[i], src[i]);
+        result += src[i] << (len - i - 1) * 8;
+    }
+    printf ("hash = %#x\n", (unsigned int) result);
+
+    return result;
 }

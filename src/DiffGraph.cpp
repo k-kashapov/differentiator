@@ -43,7 +43,7 @@ static void LinkTreeNodes (TNode *src)
 void PrintNodeDot (TNode *node)
 {
     const char *shape = "rectangle";
-    const char *color = "black";
+    const char *color = "red";
 
     switch (node->type)
     {

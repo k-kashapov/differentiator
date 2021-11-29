@@ -43,3 +43,7 @@ Tree *DiffTree (Tree *src_tree, char param = 'x');
 TNode *DiffNode (TNode *node, char param = 'x');
 
 int DisplacementHash (const void *data, size_t len);
+
+void OpenTexFile (const char *name);
+
+void CloseTexFile (void);

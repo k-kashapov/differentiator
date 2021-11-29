@@ -204,6 +204,7 @@ TNode *CopyNode (TNode *src)
 
 Tree *DiffTree (Tree *src_tree, char param)
 {
+    OpenTexFile ("Result.tex");
     Tree *res_tree = (Tree*) calloc (1, sizeof (Tree));
     if (!res_tree)
     {
@@ -213,7 +214,7 @@ Tree *DiffTree (Tree *src_tree, char param)
     res_tree->root = DiffNode (src_tree->root, param);
 
     TreeOk (res_tree);
-
+    CloseTexFile ();
     return res_tree;
 }
 

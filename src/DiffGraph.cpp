@@ -56,7 +56,7 @@ void PrintNodeDot (TNode *node)
             break;
         case TYPE_OP:
             shape = "diamond";
-            switch ((char) node->data)
+            switch ((int) node->data)
             {
                 case '+':
                     color = "lightgreen";

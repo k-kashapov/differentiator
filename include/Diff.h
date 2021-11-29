@@ -8,13 +8,14 @@ enum TYPES
     TYPE_OP    = 0x003,
 };
 
+// Hash value for unary function = reverse name of the function
 enum UNARY_FUNCS
 {
-    SIN  = 'sin',
-    COS  = 'cos',
-    ASIN = 'asin',
-    ACOS = 'acos',
-    LN   = 'ln',
+    SIN  = 'nis',
+    COS  = 'soc',
+    ASIN = 'nisa',
+    ACOS = 'soca',
+    LN   = 'nl',
 };
 
 enum DIFF_EXIT_CODES

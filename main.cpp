@@ -2,10 +2,6 @@
 
 int main (int argc, const char **argv)
 {
-    DisplacementHash ("sin", 3);
-    printf ("aa = %#x\n", 'sin');
-    return 0;
-
     Config io_config = {};
     GetArgs (argc, argv, &io_config);
     #ifdef LOGGING

@@ -6,6 +6,7 @@ enum TYPES
     TYPE_CONST = 0x001,
     TYPE_VAR   = 0x002,
     TYPE_OP    = 0x003,
+    TYPE_UNARY = 0x004,
 };
 
 // Hash value for unary function = reverse name of the function

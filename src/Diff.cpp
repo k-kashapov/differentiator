@@ -5,11 +5,17 @@
 #define DR  DiffNode (node->right, param)
 #define CR  CopyNode (node->right)
 #define CL  CopyNode (node->left)
-#define ADD(l, r) CreateNode ('+', TYPE_OP, l, r)
-#define SUB(l, r) CreateNode ('-', TYPE_OP, l, r)
-#define MUL(l, r) CreateNode ('*', TYPE_OP, l, r)
-#define DIV(l, r) CreateNode ('/', TYPE_OP, l, r)
-#define POW(l, r) CreateNode ('^', TYPE_OP, l, r)
+#define CN(val)    CreateNode (val, TYPE_CONST)
+#define ADD(l, r)  CreateNode ('+',  TYPE_OP,    l, r)
+#define SUB(l, r)  CreateNode ('-',  TYPE_OP,    l, r)
+#define MUL(l, r)  CreateNode ('*',  TYPE_OP,    l, r)
+#define DIV(l, r)  CreateNode ('/',  TYPE_OP,    l, r)
+#define POW(l, r)  CreateNode ('^',  TYPE_OP,    l, r)
+#define DSIN(val)  CreateNode (SIN,  TYPE_UNARY, val)
+#define DCOS(val)  CreateNode (COS,  TYPE_UNARY, val)
+#define DASIN(val) CreateNode (ASIN, TYPE_UNARY, val)
+#define DACOS(val) CreateNode (ACOS, TYPE_UNARY, val)
+#define DLN(val)   CreateNode (LN,   TYPE_UNARY, val)
 
 static int ProcessAlNum (const char *target, TNode **curr_node, size_t *curr)
 {
@@ -17,7 +23,7 @@ static int ProcessAlNum (const char *target, TNode **curr_node, size_t *curr)
     {
         char word[5] = {};
         int bytes_read = 0;
-        int read = sscanf (target, "%[^)]%n", word, &bytes_read);
+        int read = sscanf (target, "%[^()]%n", word, &bytes_read);
 
         if (bytes_read < 1 || read == 0)
         {
@@ -33,7 +39,10 @@ static int ProcessAlNum (const char *target, TNode **curr_node, size_t *curr)
         {
             printf ("word scanned = %s\n", word);
             int word_hash = DisplacementHash (word, (size_t) bytes_read);
+
             (*curr_node)->data = (tree_elem) (word_hash);
+            (*curr_node)->type = TYPE_UNARY;
+
             *curr += (size_t) bytes_read - 1;
         }
     }
@@ -72,15 +81,15 @@ static int ProcessSymbol (const char *target, TNode **curr_node)
                 AddNodeLeft (*curr_node, 0);
                 *curr_node = (*curr_node)->left;
             }
-            else if (!(*curr_node)->right)
+            else if (!(*curr_node)->right && (*curr_node)->type != TYPE_UNARY)
             {
                 AddNodeRight (*curr_node, 0);
                 *curr_node = (*curr_node)->right;
             }
             else
             {
-                LOG_ERROR ("Node %p L and R already exist\n",
-                            , curr_node);
+                LOG_ERROR ("Node %p L and R already exist: %s\n",
+                            , curr_node, target);
                 return LR_ALREADY_EXIST;
             }
             break;
@@ -114,7 +123,11 @@ static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
     printf ("---------\ncurr char is %c (%d)\n", *target, *target);
     if (isalnum (*target))
     {
-        ProcessAlNum (target, curr_node, curr);
+        int alnum_err = ProcessAlNum (target, curr_node, curr);
+        if (alnum_err)
+        {
+            return alnum_err;
+        }
     }
 
     int sym_error = ProcessSymbol (target, curr_node);
@@ -123,7 +136,7 @@ static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
         return sym_error;
     }
 
-    printf ("curr data is %c (%lf)\n", (char)(*curr_node)->data, (*curr_node)->data);
+    printf ("curr data is %c (%lf)\n", (int)(*curr_node)->data, (*curr_node)->data);
     return OK;
 }
 
@@ -211,7 +224,7 @@ TNode *DiffNode (TNode *node, char param)
         case TYPE_CONST:
             return CreateNode (0, TYPE_CONST);
         case TYPE_VAR:
-            if ((char) node->data == param)
+            if ((int) node->data == param)
             {
                 return CreateNode (1, TYPE_CONST);
             }
@@ -219,6 +232,7 @@ TNode *DiffNode (TNode *node, char param)
             {
                 return CreateNode (0, TYPE_CONST);
             }
+        case TYPE_UNARY: [[fallthrough]];
         case TYPE_OP:
             switch ((int) node->data)
             {
@@ -229,16 +243,26 @@ TNode *DiffNode (TNode *node, char param)
                 case '*':
                     return ADD (MUL (DL, CR), MUL (CL, DR));
                 case '/':
-                    return DIV (SUB (MUL (DL, CR), MUL (DR, CL)), MUL (CR, CR));
+                    return DIV (SUB (MUL (DL, CR), MUL (DR, CL)), POW (CR, CN (2)));
                 case '^':
-                    return MUL (MUL (CR, POW (CL, SUB (CR, CreateNode (1, TYPE_CONST)))), DL);
+                    return MUL (MUL (CR, POW (CL, SUB (CR, CN (1)))), DL);
+                case SIN:
+                    return MUL (DL, DCOS (CL));
+                case COS:
+                    return MUL (DL, MUL (CN (-1), DSIN (CL)));
+                case ASIN:
+                    return DIV (DL, POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
+                case ACOS:
+                    return DIV (MUL (CN (-1), DL), POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
+                case LN:
+                    return DIV (DL, CL);
                 default:
                     LOG_ERROR ("Invalid operation type: %ld; node %p\n",
                                 , node->data, node);
             }
             break;
         default:
-            LOG_ERROR ("Invalid node type: %d; node %p",
+            LOG_ERROR ("Invalid node type: %d; node %p\n",
                         , node->data, node);
     }
 

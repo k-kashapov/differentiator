@@ -10,7 +10,15 @@ int main (int argc, const char **argv)
 
     Tree *diff_tree = CreateTree (0);
 
-    BuildTreeFromFile (&io_config, diff_tree);
+    int build_err = BuildTreeFromFile (&io_config, diff_tree);
+    if (build_err)
+    {
+        DestructTree (diff_tree);
+        #ifdef LOGGING
+            fclose (log_file);
+        #endif
+        return build_err;
+    }
 
     Tree *diffed = DiffTree (diff_tree, 'x');
 

@@ -2,6 +2,11 @@
 
 static FILE *Graph_file = NULL;
 
+#define COLOR_CASE(value, clr)                                                  \
+    case value:                                                                 \
+        color = clr;                                                            \
+        break
+
 void OpenGraphFile (const char *name)
 {
     Graph_file = fopen (name, "wt");
@@ -54,25 +59,21 @@ void PrintNodeDot (TNode *node)
             color = "pink";
             shape = "ellipse";
             break;
+        case TYPE_UNARY: [[fallthrough]];
         case TYPE_OP:
             shape = "diamond";
             switch ((int) node->data)
             {
-                case '+':
-                    color = "lightgreen";
-                    break;
-                case '-':
-                    color = "cornflowerblue";
-                    break;
-                case '*':
-                    color = "gold";
-                    break;
-                case '/':
-                    color = "orange";
-                    break;
-                case '^':
-                    color = "aqua";
-                    break;
+                COLOR_CASE ('+',  "lightgreen");
+                COLOR_CASE ('-',  "cornflowerblue");
+                COLOR_CASE ('*',  "gold");
+                COLOR_CASE ('/',  "orange");
+                COLOR_CASE ('^',  "aqua");
+                COLOR_CASE (SIN,  "wheat1");
+                COLOR_CASE (COS,  "plum1");
+                COLOR_CASE (ASIN, "olivedrab1");
+                COLOR_CASE (ACOS, "magenta");
+                COLOR_CASE (LN,   "bisque1");
                 default:
                     LOG_ERROR ("Graph build: Invalid operation: %lf, node %p\n",
                                 , node->data, node);
@@ -92,9 +93,13 @@ void PrintNodeDot (TNode *node)
 
     switch (node->type)
     {
-        case TYPE_OP:  [[fallthrough]];
+        case TYPE_OP:    [[fallthrough]];
+        case TYPE_UNARY: [[fallthrough]];
         case TYPE_VAR:
-            fprintf (Graph_file, "%c", (char) node->data);
+            {
+                int64_t data = (int) node->data;
+                fprintf (Graph_file, "%s", (char *)(&data));
+            }
             break;
         case TYPE_CONST:
             fprintf (Graph_file, "%.3lf\n", node->data);

@@ -46,4 +46,10 @@ int DisplacementHash (const void *data, size_t len);
 
 void OpenTexFile (const char *name);
 
+void PrintInitalTree (Tree *tree);
+
+void PrintDiff (TNode *before, TNode *after, char param);
+
+void PrintNodeTex (TNode *node);
+
 void CloseTexFile (void);

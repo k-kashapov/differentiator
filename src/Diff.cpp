@@ -204,59 +204,77 @@ TNode *CopyNode (TNode *src)
 
 Tree *DiffTree (Tree *src_tree, char param)
 {
-    OpenTexFile ("Result.tex");
     Tree *res_tree = (Tree*) calloc (1, sizeof (Tree));
     if (!res_tree)
     {
         LOG_ERROR ("CREATE TREE FAILED\n");
     }
 
-    res_tree->root = DiffNode (src_tree->root, param);
+    OpenTexFile ("Result.tex");
 
+    PrintInitalTree (src_tree);
+
+    res_tree->root = DiffNode (src_tree->root, param);
     TreeOk (res_tree);
+
     CloseTexFile ();
+
     return res_tree;
 }
 
 TNode *DiffNode (TNode *node, char param)
 {
+    TNode *result = NULL;
+
     switch (node->type)
     {
         case TYPE_CONST:
-            return CreateNode (0, TYPE_CONST);
+            result =  CreateNode (0, TYPE_CONST);
+            break;
         case TYPE_VAR:
             if ((int) node->data == param)
             {
-                return CreateNode (1, TYPE_CONST);
+                result =  CreateNode (1, TYPE_CONST);
             }
             else
             {
-                return CreateNode (0, TYPE_CONST);
+                result =  CreateNode (0, TYPE_CONST);
             }
+            break;
         case TYPE_UNARY: [[fallthrough]];
         case TYPE_OP:
             switch ((int) node->data)
             {
                 case '+':
-                    return ADD (DL, DR);
+                    result =  ADD (DL, DR);
+                    break;
                 case '-':
-                    return SUB (DL, DR);
+                    result =  SUB (DL, DR);
+                    break;
                 case '*':
-                    return ADD (MUL (DL, CR), MUL (CL, DR));
+                    result =  ADD (MUL (DL, CR), MUL (CL, DR));
+                    break;
                 case '/':
-                    return DIV (SUB (MUL (DL, CR), MUL (DR, CL)), POW (CR, CN (2)));
+                    result =  DIV (SUB (MUL (DL, CR), MUL (DR, CL)), POW (CR, CN (2)));
+                    break;
                 case '^':
-                    return MUL (MUL (CR, POW (CL, SUB (CR, CN (1)))), DL);
+                    result =  MUL (POW (CL, CR), ADD (MUL (DR, DLN (CL)), DIV (MUL (CR, DL), CL)));
+                    break;
                 case SIN:
-                    return MUL (DL, DCOS (CL));
+                    result =  MUL (DL, DCOS (CL));
+                    break;
                 case COS:
-                    return MUL (DL, MUL (CN (-1), DSIN (CL)));
+                    result =  MUL (DL, MUL (CN (-1), DSIN (CL)));
+                    break;
                 case ASIN:
-                    return DIV (DL, POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
+                    result =  DIV (DL, POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
+                    break;
                 case ACOS:
-                    return DIV (MUL (CN (-1), DL), POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
+                    result =  DIV (MUL (CN (-1), DL), POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
+                    break;
                 case LN:
-                    return DIV (DL, CL);
+                    result =  DIV (DL, CL);
+                    break;
                 default:
                     LOG_ERROR ("Invalid operation type: %ld; node %p\n",
                                 , node->data, node);
@@ -267,7 +285,10 @@ TNode *DiffNode (TNode *node, char param)
                         , node->data, node);
     }
 
-    return NULL;
+    if (result)
+        PrintDiff (node, result, param);
+
+    return result;
 }
 
 int DisplacementHash (const void *data, size_t len)

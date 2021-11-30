@@ -27,6 +27,7 @@ enum EXIT_CODES
 {
     OK          = 0x0000,
     BAD_PTR     = 0x0001,
+    ORPHAN_NODE = 0x0002,
 };
 
 typedef void (*NodeAction) (TNode *);

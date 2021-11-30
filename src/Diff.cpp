@@ -1,21 +1,21 @@
 #include "Diff.h"
 #include "files.h"
+#include "DiffDSL.h"
+#include "math.h"
 
-#define DL  DiffNode (node->left, param)
-#define DR  DiffNode (node->right, param)
-#define CR  CopyNode (node->right)
-#define CL  CopyNode (node->left)
-#define CN(val)    CreateNode (val, TYPE_CONST)
-#define ADD(l, r)  CreateNode ('+',  TYPE_OP,    l, r)
-#define SUB(l, r)  CreateNode ('-',  TYPE_OP,    l, r)
-#define MUL(l, r)  CreateNode ('*',  TYPE_OP,    l, r)
-#define DIV(l, r)  CreateNode ('/',  TYPE_OP,    l, r)
-#define POW(l, r)  CreateNode ('^',  TYPE_OP,    l, r)
-#define DSIN(val)  CreateNode (SIN,  TYPE_UNARY, val)
-#define DCOS(val)  CreateNode (COS,  TYPE_UNARY, val)
-#define DASIN(val) CreateNode (ASIN, TYPE_UNARY, val)
-#define DACOS(val) CreateNode (ACOS, TYPE_UNARY, val)
-#define DLN(val)   CreateNode (LN,   TYPE_UNARY, val)
+#define OP_CASE(op)                                                             \
+    case *#op:                                                                  \
+        *value = l_val op r_val;                                                \
+        break
+
+#define UNARY_CASE(val, func)                                                   \
+    case val:                                                                   \
+        *value = func (l_val);                                                  \
+        break;
+
+const double Epsilon = 1e-5;
+
+#define IS_EQ_APPROX(a, b) (a - b < Epsilon)
 
 static int ProcessAlNum (const char *target, TNode **curr_node, size_t *curr)
 {
@@ -171,32 +171,28 @@ int BuildTreeFromFile (Config *io_config, Tree *tree)
         return BUILD_FROM_FILE_FAIL;
     }
 
-    OpenGraphFile ("dotInput.dot");
-    VisitNode (GetRoot (tree), NULL, PrintNodeDot, NULL);
-    CloseGraphFile();
-
-    system ("dot dotInput.dot -Tpng -o graph.png");
-    system ("eog graph.png");
+    CreateNodeImage (GetRoot (tree), "init_graph.png");
 
     free (source);
 
     return OK;
 }
 
-TNode *CopyNode (TNode *src)
+TNode *CopyNode (TNode *src, TNode *parent)
 {
     if (!src) return NULL;
     TNode *cpy = CreateNode (src->data);
     cpy->type = src->type;
+    cpy->parent = parent;
 
     if (src->left)
     {
-        cpy->left  = CopyNode (src->left);
+        cpy->left  = CopyNode (src->left, cpy);
     }
 
     if (src->right)
     {
-        cpy->right = CopyNode (src->right);
+        cpy->right = CopyNode (src->right, cpy);
     }
 
     return cpy;
@@ -217,6 +213,14 @@ Tree *DiffTree (Tree *src_tree, char param)
     res_tree->root = DiffNode (src_tree->root, param);
     TreeOk (res_tree);
 
+    CreateNodeImage (GetRoot (res_tree), "diffed.png");
+
+    OptimizeTree (res_tree);
+
+    CreateNodeImage (GetRoot (res_tree), "opt.png");
+
+    PrintNodeTex (GetRoot (res_tree));
+
     CloseTexFile ();
 
     return res_tree;
@@ -229,16 +233,16 @@ TNode *DiffNode (TNode *node, char param)
     switch (node->type)
     {
         case TYPE_CONST:
-            result =  CreateNode (0, TYPE_CONST);
+            result = CreateNode (0, TYPE_CONST);
             break;
         case TYPE_VAR:
             if ((int) node->data == param)
             {
-                result =  CreateNode (1, TYPE_CONST);
+                result = CreateNode (1, TYPE_CONST);
             }
             else
             {
-                result =  CreateNode (0, TYPE_CONST);
+                result = CreateNode (0, TYPE_CONST);
             }
             break;
         case TYPE_UNARY: [[fallthrough]];
@@ -246,34 +250,34 @@ TNode *DiffNode (TNode *node, char param)
             switch ((int) node->data)
             {
                 case '+':
-                    result =  ADD (DL, DR);
+                    result = ADD (DL, DR);
                     break;
                 case '-':
-                    result =  SUB (DL, DR);
+                    result = SUB (DL, DR);
                     break;
                 case '*':
-                    result =  ADD (MUL (DL, CR), MUL (CL, DR));
+                    result = ADD (MUL (DL, CR), MUL (CL, DR));
                     break;
                 case '/':
-                    result =  DIV (SUB (MUL (DL, CR), MUL (DR, CL)), POW (CR, CN (2)));
+                    result = DIV (SUB (MUL (DL, CR), MUL (DR, CL)), POW (CR, CN (2)));
                     break;
                 case '^':
-                    result =  MUL (POW (CL, CR), ADD (MUL (DR, DLN (CL)), DIV (MUL (CR, DL), CL)));
+                    result = MUL (POW (CL, CR), ADD (MUL (DR, DLN (CL)), DIV (MUL (CR, DL), CL)));
                     break;
                 case SIN:
-                    result =  MUL (DL, DCOS (CL));
+                    result = MUL (DL, DCOS (CL));
                     break;
                 case COS:
-                    result =  MUL (DL, MUL (CN (-1), DSIN (CL)));
+                    result = MUL (DL, MUL (CN (-1), DSIN (CL)));
                     break;
                 case ASIN:
-                    result =  DIV (DL, POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
+                    result = DIV (DL, POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
                     break;
                 case ACOS:
-                    result =  DIV (MUL (CN (-1), DL), POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
+                    result = DIV (MUL (CN (-1), DL), POW (SUB (CN (1), POW (CL, CN (2))), CN (0.5)));
                     break;
                 case LN:
-                    result =  DIV (DL, CL);
+                    result = DIV (DL, CL);
                     break;
                 default:
                     LOG_ERROR ("Invalid operation type: %ld; node %p\n",
@@ -289,6 +293,149 @@ TNode *DiffNode (TNode *node, char param)
         PrintDiff (node, result, param);
 
     return result;
+}
+
+int OptimizeTree (Tree *tree)
+{
+    int optimized = 0;
+
+    do
+    {
+        optimized  = OptimizeNode (&tree->root);
+        TreeOk (tree);
+    }
+    while (optimized);
+
+    return OK;
+}
+
+int OptimizeNode (TNode **node)
+{
+    // printf ("Starting Optim: node: %p; data = %lg; type = %d; left = %p; right = %p; parent = %p\n",
+    //          *node, (*node)->data, (*node)->type, (*node)->left, (*node)->right, (*node)->parent);
+
+    double val = 0;
+    int isConst = IsConstantNode (*node, &val);
+
+    // printf ("Is it const? %d\n", isConst);
+
+    if (isConst)
+    {
+        if ((*node)->type == TYPE_CONST) return 0;
+
+        TNode *parent = (*node)->parent;
+        DestructNode (*node);
+        TNode *const_node = CreateNode (val, TYPE_CONST);
+        const_node->parent = parent;
+        *node = const_node;
+
+        return 1;
+    }
+    else
+    {
+        int l_opt = 0;
+        int r_opt = 0;
+        if ((*node)->left)
+        {
+            l_opt = OptimizeNode (&(*node)->left);
+        }
+        if ((*node)->right)
+        {
+            r_opt = OptimizeNode (&(*node)->right);
+        }
+        return l_opt || r_opt;
+    }
+
+    return 0;
+}
+
+int IsConstantNode (TNode *node, double *value)
+{
+    // printf ("-- Starting isc: node: %p; data = %lg; type = %d; left = %p; right = %p; parent = %p\n",
+    //          node, (node)->data, (node)->type, (node)->left, (node)->right, (node)->parent);
+    switch (node->type)
+    {
+        case TYPE_OP:
+            if (!node->right || !node->left)
+            {
+                LOG_ERROR ("No childen nodes in operation: %c; "
+                           "left: %p; right: %p\n",
+                           , (char) node->data, node->left, node->right);
+            }
+            else
+            {
+                double l_val = 0;
+                double r_val = 0;
+                int l_opt = IsConstantNode (node->left,  &l_val);
+                int r_opt = IsConstantNode (node->right, &r_val);
+                if (!l_opt || !r_opt)
+                {
+                    return 0;
+                }
+                else
+                {
+                    switch ((char) node->data)
+                    {
+                        OP_CASE (+);
+                        OP_CASE (-);
+                        OP_CASE (*);
+                        OP_CASE (/);
+                        case '^':
+                            *value = pow (l_val, r_val);
+                            break;
+                        default:
+                            LOG_ERROR ("Invalid operation type: %ld; node %p\n",
+                                       , node->data, node);
+                    }
+                    return 1;
+                }
+            }
+            break;
+        case TYPE_UNARY:
+            if (!node->left)
+            {
+                int64_t data = (int64_t) node->data;
+                LOG_ERROR ("No left node in operation: %s; "
+                           "left: %p; right: %p\n",
+                           , (char *)&data, node->left, node->right);
+            }
+            else
+            {
+                double l_val = 0;
+                int l_opt = IsConstantNode (node->left,  &l_val);
+                if (!l_opt)
+                {
+                    return 0;
+                }
+                else
+                {
+                    switch ((int) node->data)
+                    {
+                        UNARY_CASE (SIN,  sin);
+                        UNARY_CASE (COS,  cos);
+                        UNARY_CASE (ASIN, sin);
+                        UNARY_CASE (ACOS, sin);
+                        UNARY_CASE (LN,   log);
+                        default:
+                            int64_t data = (int64_t) node->data;
+                            LOG_ERROR ("Invalid unary type: %s; node %p\n",
+                                        , (char *)&data, node);
+                    }
+                    return 1;
+                }
+            }
+            break;
+        case TYPE_VAR:
+            return 0;
+        case TYPE_CONST:
+            *value = node->data;
+            return 1;
+        default:
+            LOG_ERROR ("Invalid node type: %d; node %p;\n",
+                       , node->type, node);
+    }
+
+    return 0;
 }
 
 int DisplacementHash (const void *data, size_t len)

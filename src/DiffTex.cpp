@@ -90,15 +90,16 @@ void PrintNodeTex (TNode *node)
     {
         case TYPE_OP:
             {
-                fprintf (TexFile, "(");
                 switch ((int) node->data)
                 {
                     case '+': [[fallthrough]];
                     case '-':
                         {
+                            fprintf (TexFile, "(");
                             PL;
                             fprintf (TexFile, "%c", (char) node->data);
                             PR;
+                            fprintf (TexFile, ")");
                         }
                         break;
                     case '^':
@@ -129,7 +130,6 @@ void PrintNodeTex (TNode *node)
                         LOG_ERROR ("TEX: Invalid operation: %lf, node %p\n",
                                     , node->data, node);
                 }
-                fprintf (TexFile, ")");
             }
             break;
         case TYPE_UNARY:
@@ -144,7 +144,7 @@ void PrintNodeTex (TNode *node)
             fprintf (TexFile, "%c", (char)(node->data));
             break;
         case TYPE_CONST:
-            fprintf (TexFile, "%.3lf", node->data);
+            fprintf (TexFile, "%lg", node->data);
             break;
         default:
             LOG_ERROR ("TEX: Invalid node type: %d, node %p\n",

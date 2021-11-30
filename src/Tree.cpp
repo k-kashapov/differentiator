@@ -34,7 +34,15 @@ TNode *CreateNode (tree_elem value, int type, TNode *left, TNode *right)
     node_ptr->data   = value;
     node_ptr->left   = left;
     node_ptr->right  = right;
-    node_ptr->parent = NULL;
+    if (left)
+    {
+        left->parent = node_ptr;
+    }
+    if (right)
+    {
+        right->parent = node_ptr;
+    }
+
     node_ptr->type   = type;
 
     return node_ptr;
@@ -105,6 +113,15 @@ int64_t NodeOk (TNode *node)
     {
         LOG_ERROR ("BAD DATA PTR at %p\n", , node);
         err |= BAD_PTR;
+    }
+
+    if (node->parent)
+    {
+        if (node != node->parent->left && node != node->parent->right)
+        {
+            LOG_ERROR ("NO PARRENT-CHILD CONNECTION at %p\n", , node);
+            err |= ORPHAN_NODE;
+        }
     }
 
     if (node->left)

@@ -21,6 +21,6 @@ void LogErr (FILE *log_file, const char *fatal, const char *msg, ...);
     #define LOG_ERROR(string, ...) LogErr (LOG_ARGS_OUT(), "ERROR", string __VA_ARGS__)
     #define LOG_FATAL(string, ...) LogErr (LOG_ARGS_OUT(), "FATAL", string __VA_ARGS__)
 #else
-    #define LOG_ERROR(string, ...) LogErr (stderr, "ERROR", string __VA_ARGS__)
-    #define LOG_FATAL(string, ...) LogErr (stderr, "FATAL", string __VA_ARGS__)
+    #define LOG_ERROR(string, ...) LogErr (stderr, "ERROR", "%s (%d) " string, __FUNCTION__, __LINE__ __VA_ARGS__)
+    #define LOG_FATAL(string, ...) LogErr (stderr, "FATAL", "%s (%d) " string, __FUNCTION__, __LINE__ __VA_ARGS__)
 #endif

@@ -36,11 +36,17 @@ void CloseGraphFile (void);
 
 void PrintNodeDot (TNode *node);
 
-TNode *CopyNode (TNode *src);
+TNode *CopyNode (TNode *src, TNode *parent = NULL);
 
 Tree *DiffTree (Tree *src_tree, char param = 'x');
 
 TNode *DiffNode (TNode *node, char param = 'x');
+
+int OptimizeTree (Tree *tree);
+
+int OptimizeNode (TNode **node);
+
+int IsConstantNode (TNode *node, double *value);
 
 int DisplacementHash (const void *data, size_t len);
 
@@ -51,5 +57,7 @@ void PrintInitalTree (Tree *tree);
 void PrintDiff (TNode *before, TNode *after, char param);
 
 void PrintNodeTex (TNode *node);
+
+int CreateNodeImage (TNode *node, const char *name);
 
 void CloseTexFile (void);

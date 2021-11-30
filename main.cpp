@@ -22,13 +22,6 @@ int main (int argc, const char **argv)
 
     Tree *diffed = DiffTree (diff_tree, 'x');
 
-    OpenGraphFile ("dotInput.dot");
-    VisitNode (GetRoot (diffed), NULL, PrintNodeDot, NULL);
-    CloseGraphFile();
-
-    system ("dot dotInput.dot -Tpng -o graphDiff.png");
-    system ("eog graphDiff.png");
-
     DestructTree (diff_tree);
     DestructTree (diffed);
 

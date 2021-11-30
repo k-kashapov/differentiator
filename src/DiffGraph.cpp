@@ -98,7 +98,7 @@ void PrintNodeDot (TNode *node)
         case TYPE_VAR:
             {
                 int64_t data = (int) node->data;
-                fprintf (Graph_file, "%s", (char *)(&data));
+                fprintf (Graph_file, "%s", (char *)&data);
             }
             break;
         case TYPE_CONST:
@@ -109,9 +109,27 @@ void PrintNodeDot (TNode *node)
                         , node->type, node);
     }
 
-    fprintf (Graph_file, "\"]\n");
+    fprintf (Graph_file, "%p\"]\n", node);
 
     LinkTreeNodes (node);
 
     return;
+}
+
+int CreateNodeImage (TNode *node, const char *name)
+{
+    OpenGraphFile ("dotInput.dot");
+    VisitNode (node, NULL, PrintNodeDot, NULL);
+    CloseGraphFile();
+
+    char dot_command[100] = "dot dotInput.dot -Tpng -o ";
+    strcat (dot_command, name);
+    system (dot_command);
+
+    char eog_command[100] = "eog ";
+    strcat (eog_command, name);
+
+    system (eog_command);
+
+    return OK;
 }

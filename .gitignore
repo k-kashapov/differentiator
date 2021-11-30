@@ -6,3 +6,7 @@
 
 *.dot
 dotInput.dot
+*.aux
+*.log
+*.pdf
+*.tex

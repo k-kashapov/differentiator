@@ -72,6 +72,47 @@ void TreeNodePrint (TNode *node)
     return;
 }
 
+int GetChildrenCount (TNode *node)
+{
+    int num = 1;
+    if (node->left) num += GetChildrenCount (node->left);
+    if (node->right) num += GetChildrenCount (node->right);
+    return num;
+}
+
+int NodesEqual (TNode *first, TNode *second)
+{
+    if (!IS_EQ_APPROX(first->data, second->data)) return 0;
+
+    int equal = 1;
+
+    if (first->left)
+    {
+        if (second->left)
+        {
+            equal *= NodesEqual (first->left, second->left);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    if (first->right)
+    {
+        if (second->right)
+        {
+            equal *= NodesEqual (first->right, second->right);
+        }
+        else
+        {
+            return 0;
+        }
+    }
+
+    return equal;
+}
+
 TNode *VisitNode (TNode *node, NodeAction pre, NodeAction in, NodeAction post)
 {
     if (!node) return 0;

@@ -2,9 +2,10 @@
 #include <time.h>
 
 static FILE *TexFile = NULL;
+const int Max_Len    = 20;
 
-#define PL PrintNodeTex (node->left)
-#define PR PrintNodeTex (node->right)
+#define PL PrintNodeTex (node->left,  long_nodes, greek_num)
+#define PR PrintNodeTex (node->right, long_nodes, greek_num)
 
 const char *Transitions[] =
 {
@@ -25,6 +26,26 @@ const char *Transitions[] =
 };
 
 const int TR_NUM = sizeof (Transitions) / sizeof (char*);
+
+const char *Greek[] =
+{
+    "\\alpha", "\\beta",
+    "\\gamma", "\\Delta",
+    "\\delta", "\\epsilon",
+    "\\zeta", "\\eta",
+    "\\Theta", "\\theta",
+    "\\iota", "\\kappa",
+    "\\Lambda", "\\lambda",
+    "\\mu", "\\nu",
+    "\\Xi", "\\xi",
+    "\\Pi", "\\pi",
+    "\\varpi", "\\Sigma",
+    "\\sigma", "\\tau",
+    "\\Phi", "\\phi",
+    "\\varphi", "\\chi",
+    "\\Psi", "\\psi",
+    "\\Omega", "\\omega"
+};
 
 void OpenTexFile (const char *name)
 {
@@ -80,21 +101,66 @@ void PrintInitalTree (Tree *tree)
 
 void PrintDiff (TNode *before, TNode *after, char param)
 {
+    int   greek_num    = 0;
+    TNode **long_nodes = (TNode **) calloc (32, sizeof (TNode *));
+
     srand ((unsigned) clock());
     int rand_num = rand();
     fprintf (TexFile, "%s\\[\\frac{d}{d%c} ( ",
                       Transitions[rand_num % TR_NUM],
                       param);
-    PrintNodeTex (before);
+
+
+    PrintNodeTex (before, long_nodes, &greek_num);
     fprintf (TexFile, " ) = ");
-    PrintNodeTex (after);
-    fprintf (TexFile, "\\]\n");
+
+    PrintNodeTex (after, long_nodes, &greek_num);
+
+    fprintf (TexFile, "\\]\n%s", greek_num > 0 ? "где\n" : "");
+
+    for (int node = 0; node < greek_num; node++)
+    {
+        fprintf (TexFile, "\\[ %s = ", Greek[node]);
+        PrintNodeTex (long_nodes[node]);
+        fprintf (TexFile, "\\]\n");
+    }
+
+    free (long_nodes);
 
     return;
 }
 
-void PrintNodeTex (TNode *node)
+static TNode *GetChildWithLessChildrenThan (TNode *node, int child_num)
 {
+    if (GetChildrenCount (node) > child_num)
+    {
+        return GetChildWithLessChildrenThan (node->left, child_num);
+    }
+
+    return node;
+}
+
+void PrintNodeTex (TNode *node, TNode **long_nodes, int *greek_num)
+{
+    if (long_nodes)
+    {
+        for (int check_node = 0; check_node < *greek_num; check_node++)
+        {
+            if (NodesEqual (long_nodes[check_node], node))
+            {
+                fprintf (TexFile, " %s ", Greek[check_node]);
+                return;
+            }
+        }
+
+        int children = GetChildrenCount (node);
+        if (children > Max_Len)
+        {
+            long_nodes[*greek_num] = GetChildWithLessChildrenThan (node, Max_Len);
+            (*greek_num)++;
+        }
+    }
+
     switch (node->type)
     {
         case TYPE_OP:

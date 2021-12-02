@@ -13,10 +13,6 @@
         *value = func (l_val);                                                  \
         break;
 
-const double Epsilon = 1e-5;
-
-#define IS_EQ_APPROX(a, b) (a - b < Epsilon)
-
 static int ProcessAlNum (const char *target, TNode **curr_node, size_t *curr)
 {
     if (isalpha (*target))
@@ -210,12 +206,14 @@ Tree *DiffTree (Tree *src_tree, char param)
 
     PrintInitalTree (src_tree);
 
-    OptimizeTree (src_tree);
+    OptimizeTree (src_tree, param);
 
     res_tree->root = DiffNode (src_tree->root, param);
     TreeOk (res_tree);
 
     CreateNodeImage (GetRoot (res_tree), "diffed.png");
+
+    OptimizeTree (res_tree, param);
 
     PrintNodeTex (GetRoot (res_tree));
 
@@ -287,7 +285,7 @@ TNode *DiffNode (TNode *node, char param)
                         , node->data, node);
     }
 
-    OptimizeNode (&result);
+    OptimizeNode (&result, param);
 
     if (result)
         PrintDiff (node, result, param);
@@ -295,13 +293,13 @@ TNode *DiffNode (TNode *node, char param)
     return result;
 }
 
-int OptimizeTree (Tree *tree)
+int OptimizeTree (Tree *tree, char param)
 {
     int optimized = 0;
 
     do
     {
-        optimized  = OptimizeNode (&tree->root);
+        optimized  = OptimizeNode (&tree->root, param);
         TreeOk (tree);
     }
     while (optimized);
@@ -309,13 +307,13 @@ int OptimizeTree (Tree *tree)
     return OK;
 }
 
-int OptimizeNode (TNode **node)
+int OptimizeNode (TNode **node, char param)
 {
     // printf ("Starting Optim: node: %p; data = %lg; type = %d; left = %p; right = %p; parent = %p\n",
     //          *node, (*node)->data, (*node)->type, (*node)->left, (*node)->right, (*node)->parent);
 
     double val = 0;
-    int isConst = IsConstantNode (*node, &val);
+    int isConst = IsConstantNode (*node, &val, param);
 
     // printf ("Is it const? %d\n", isConst);
 
@@ -347,8 +345,7 @@ int OptimizeNode (TNode **node)
                         free (old_ptr);
                         return 1;
                     }
-
-                    if (IS_EQ_APPROX((*node)->right->data, 0))
+                    else if (IS_EQ_APPROX((*node)->right->data, 0))
                     {
                         TNode *old_ptr = *node;
                         (*node)->left->parent = old_ptr->parent;
@@ -359,6 +356,8 @@ int OptimizeNode (TNode **node)
                     }
                     break;
                 case '*':
+                    [[fallthrough]];
+                case '/':
                     if (IS_EQ_APPROX((*node)->left->data,  0) ||
                         IS_EQ_APPROX((*node)->right->data, 0))
                     {
@@ -368,24 +367,27 @@ int OptimizeNode (TNode **node)
                         (*node)->type = TYPE_CONST;
                         (*node)->left = NULL;
                         (*node)->right = NULL;
-                    }
-                    else if (IS_EQ_APPROX((*node)->left->data,  1))
-                    {
-                        TNode *old_ptr = *node;
-                        (*node)->right->parent = old_ptr->parent;
-                        *node = (*node)->right;
-                        DestructNode (old_ptr->left);
-                        free (old_ptr);
                         return 1;
                     }
-                    else if (IS_EQ_APPROX((*node)->right->data,  1))
+
+                    if (IS_EQ_APPROX((*node)->right->data,  1))
                     {
                         TNode *old_ptr = *node;
                         (*node)->left->parent = old_ptr->parent;
                         *node = (*node)->left;
                         DestructNode (old_ptr->right);
                         free (old_ptr);
-                        return 1;
+                        break;
+                    }
+                    else if (IS_EQ_APPROX((*node)->left->data,  1) &&
+                            (char) (*node)->data == '+')
+                    {
+                        TNode *old_ptr = *node;
+                        (*node)->right->parent = old_ptr->parent;
+                        *node = (*node)->right;
+                        DestructNode (old_ptr->left);
+                        free (old_ptr);
+                        break;
                     }
                     break;
                 default:
@@ -397,11 +399,11 @@ int OptimizeNode (TNode **node)
         int r_opt = 0;
         if ((*node)->left)
         {
-            l_opt = OptimizeNode (&(*node)->left);
+            l_opt = OptimizeNode (&(*node)->left, param);
         }
         if ((*node)->right)
         {
-            r_opt = OptimizeNode (&(*node)->right);
+            r_opt = OptimizeNode (&(*node)->right, param);
         }
         return l_opt || r_opt;
     }
@@ -409,7 +411,7 @@ int OptimizeNode (TNode **node)
     return 0;
 }
 
-int IsConstantNode (TNode *node, double *value)
+int IsConstantNode (TNode *node, double *value, char param)
 {
     // printf ("-- Starting isc: node: %p; data = %lg; type = %d; left = %p; right = %p; parent = %p\n",
     //          node, (node)->data, (node)->type, (node)->left, (node)->right, (node)->parent);
@@ -426,8 +428,8 @@ int IsConstantNode (TNode *node, double *value)
             {
                 double l_val = 0;
                 double r_val = 0;
-                int l_opt = IsConstantNode (node->left,  &l_val);
-                int r_opt = IsConstantNode (node->right, &r_val);
+                int l_opt = IsConstantNode (node->left,  &l_val, param);
+                int r_opt = IsConstantNode (node->right, &r_val, param);
                 if (!l_opt || !r_opt)
                 {
                     return 0;
@@ -462,7 +464,7 @@ int IsConstantNode (TNode *node, double *value)
             else
             {
                 double l_val = 0;
-                int l_opt = IsConstantNode (node->left,  &l_val);
+                int l_opt = IsConstantNode (node->left,  &l_val, param);
                 if (!l_opt)
                 {
                     return 0;
@@ -486,7 +488,9 @@ int IsConstantNode (TNode *node, double *value)
             }
             break;
         case TYPE_VAR:
-            return 0;
+            if ((char) node->data == param)
+                return 0;
+            return 1;
         case TYPE_CONST:
             *value = node->data;
             return 1;

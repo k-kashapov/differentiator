@@ -9,6 +9,10 @@
 #define TYPE_SPEC "%lf"
 typedef double tree_elem;
 
+const double Epsilon = 1e-5;
+
+#define IS_EQ_APPROX(a, b) (a - b < Epsilon)
+
 struct TNode
 {
     tree_elem data;
@@ -43,6 +47,10 @@ TNode *AddNodeLeft (TNode *node, tree_elem value);
 TNode *AddNodeRight (TNode *node, tree_elem value);
 
 void TreeNodePrint (TNode *node);
+
+int GetChildrenCount (TNode *node);
+
+int NodesEqual (TNode *first, TNode *second);
 
 TNode *VisitNode (TNode *node, NodeAction pre, NodeAction in, NodeAction post);
 

@@ -42,11 +42,11 @@ Tree *DiffTree (Tree *src_tree, char param = 'x');
 
 TNode *DiffNode (TNode *node, char param = 'x');
 
-int OptimizeTree (Tree *tree);
+int OptimizeTree (Tree *tree, char param);
 
-int OptimizeNode (TNode **node);
+int OptimizeNode (TNode **node, char param);
 
-int IsConstantNode (TNode *node, double *value);
+int IsConstantNode (TNode *node, double *value, char param);
 
 int DisplacementHash (const void *data, size_t len);
 
@@ -56,7 +56,7 @@ void PrintInitalTree (Tree *tree);
 
 void PrintDiff (TNode *before, TNode *after, char param);
 
-void PrintNodeTex (TNode *node);
+void PrintNodeTex (TNode *node, TNode **long_nodes = NULL, int *greek_num = 0);
 
 int CreateNodeImage (TNode *node, const char *name);
 

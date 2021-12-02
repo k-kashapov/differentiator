@@ -211,11 +211,9 @@ Tree *DiffTree (Tree *src_tree, char param)
     res_tree->root = DiffNode (src_tree->root, param);
     TreeOk (res_tree);
 
-    CreateNodeImage (GetRoot (res_tree), "diffed.png");
-
     OptimizeTree (res_tree, param);
 
-    PrintNodeTex (GetRoot (res_tree));
+    CreateNodeImage (GetRoot (res_tree), "diffed.png");
 
     CloseTexFile ();
 

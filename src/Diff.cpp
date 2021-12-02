@@ -210,14 +210,12 @@ Tree *DiffTree (Tree *src_tree, char param)
 
     PrintInitalTree (src_tree);
 
+    OptimizeTree (src_tree);
+
     res_tree->root = DiffNode (src_tree->root, param);
     TreeOk (res_tree);
 
     CreateNodeImage (GetRoot (res_tree), "diffed.png");
-
-    OptimizeTree (res_tree);
-
-    CreateNodeImage (GetRoot (res_tree), "opt.png");
 
     PrintNodeTex (GetRoot (res_tree));
 
@@ -289,6 +287,8 @@ TNode *DiffNode (TNode *node, char param)
                         , node->data, node);
     }
 
+    OptimizeNode (&result);
+
     if (result)
         PrintDiff (node, result, param);
 
@@ -333,6 +333,66 @@ int OptimizeNode (TNode **node)
     }
     else
     {
+        if ((*node)->type == TYPE_OP)
+        {
+            switch ((char) (*node)->data)
+            {
+                case '+':
+                    if (IS_EQ_APPROX((*node)->left->data, 0))
+                    {
+                        TNode *old_ptr = *node;
+                        (*node)->right->parent = old_ptr->parent;
+                        *node = (*node)->right;
+                        DestructNode (old_ptr->left);
+                        free (old_ptr);
+                        return 1;
+                    }
+
+                    if (IS_EQ_APPROX((*node)->right->data, 0))
+                    {
+                        TNode *old_ptr = *node;
+                        (*node)->left->parent = old_ptr->parent;
+                        *node = (*node)->left;
+                        DestructNode (old_ptr->right);
+                        free (old_ptr);
+                        return 1;
+                    }
+                    break;
+                case '*':
+                    if (IS_EQ_APPROX((*node)->left->data,  0) ||
+                        IS_EQ_APPROX((*node)->right->data, 0))
+                    {
+                        DestructNode ((*node)->left);
+                        DestructNode ((*node)->right);
+                        (*node)->data = 0;
+                        (*node)->type = TYPE_CONST;
+                        (*node)->left = NULL;
+                        (*node)->right = NULL;
+                    }
+                    else if (IS_EQ_APPROX((*node)->left->data,  1))
+                    {
+                        TNode *old_ptr = *node;
+                        (*node)->right->parent = old_ptr->parent;
+                        *node = (*node)->right;
+                        DestructNode (old_ptr->left);
+                        free (old_ptr);
+                        return 1;
+                    }
+                    else if (IS_EQ_APPROX((*node)->right->data,  1))
+                    {
+                        TNode *old_ptr = *node;
+                        (*node)->left->parent = old_ptr->parent;
+                        *node = (*node)->left;
+                        DestructNode (old_ptr->right);
+                        free (old_ptr);
+                        return 1;
+                    }
+                    break;
+                default:
+                    break;
+            }
+        }
+
         int l_opt = 0;
         int r_opt = 0;
         if ((*node)->left)

@@ -109,7 +109,7 @@ void PrintNodeDot (TNode *node)
                         , node->type, node);
     }
 
-    fprintf (Graph_file, "%p\"]\n", node);
+    fprintf (Graph_file, "\"]\n");
 
     LinkTreeNodes (node);
 

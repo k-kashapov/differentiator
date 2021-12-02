@@ -14,7 +14,14 @@ const char *Transitions[] =
     "Как гласит старая русская поговорка:",
     "Древняя китайская мудрость:",
     "Cразу же на ум приходит такой шаг:",
-    "Вроде бы, дальше там так:"
+    "По-моему, вот так должно быть:",
+    "Мне только что позвонили из правительства и подсказали, что",
+    "Этот приём я видел на семинаре у Овчоса:",
+    "\nЗаходит однажды в бар улитка и говорит:\n\n"
+    "- Можно виски с колой?\n\n"
+    "- Простите, но мы не обслуживаем улиток.\n\n"
+    "И бармен вышвырнул ее за дверь.\n\n"
+    "Через неделю заходит опять эта улитка и говорит:"
 };
 
 const int TR_NUM = sizeof (Transitions) / sizeof (char*);
@@ -73,8 +80,10 @@ void PrintInitalTree (Tree *tree)
 
 void PrintDiff (TNode *before, TNode *after, char param)
 {
+    srand ((unsigned) clock());
+    int rand_num = rand();
     fprintf (TexFile, "%s\\[\\frac{d}{d%c} ( ",
-                      Transitions[(unsigned) (clock() + rand()) % TR_NUM],
+                      Transitions[rand_num % TR_NUM],
                       param);
     PrintNodeTex (before);
     fprintf (TexFile, " ) = ");

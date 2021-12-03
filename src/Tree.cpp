@@ -75,6 +75,7 @@ void TreeNodePrint (TNode *node)
 int GetChildrenCount (TNode *node)
 {
     int num = 1;
+    if (node->type == TYPE_UNARY) num = 3;
     if (node->left) num += GetChildrenCount (node->left);
     if (node->right) num += GetChildrenCount (node->right);
     return num;

@@ -1,14 +1,6 @@
 #include "Tree.h"
 #include "files.h"
 
-enum TYPES
-{
-    TYPE_CONST = 0x001,
-    TYPE_VAR   = 0x002,
-    TYPE_OP    = 0x003,
-    TYPE_UNARY = 0x004,
-};
-
 // Hash value for unary function = reverse name of the function
 enum UNARY_FUNCS
 {
@@ -26,6 +18,8 @@ enum DIFF_EXIT_CODES
     BUILD_FROM_FILE_FAIL = 0x104,
     INCORR_BRACKET_SEQ   = 0x108,
     WORD_READ_ERR        = 0x110,
+    CREATE_TREE_ERR      = 0x120,
+    INVALID_DEGREE       = 0x140,
 };
 
 int BuildTreeFromFile (Config *io_config, Tree *tree);
@@ -42,6 +36,8 @@ Tree *DiffTree (Tree *src_tree, char param = 'x');
 
 TNode *DiffNode (TNode *node, char param = 'x');
 
+int McLaurinTree (Tree* tree, char param, int degree);
+
 int OptimizeTree (Tree *tree, char param);
 
 int OptimizeNode (TNode **node, char param);
@@ -50,7 +46,7 @@ int IsConstantNode (TNode *node, double *value, char param);
 
 int DisplacementHash (const void *data, size_t len);
 
-void OpenTexFile (const char *name);
+void OpenTexFile (const char *name, const char *mode);
 
 void PrintInitalTree (Tree *tree);
 

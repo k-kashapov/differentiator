@@ -1,7 +1,6 @@
 #include "Diff.h"
 #include "files.h"
 #include "DiffDSL.h"
-#include "math.h"
 
 #define OP_CASE(op)                                                             \
     case *#op:                                                                  \
@@ -202,7 +201,7 @@ Tree *DiffTree (Tree *src_tree, char param)
         LOG_ERROR ("CREATE TREE FAILED\n");
     }
 
-    OpenTexFile ("Result.tex");
+    OpenTexFile ("Result.tex", "wt");
 
     PrintInitalTree (src_tree);
 
@@ -283,12 +282,63 @@ TNode *DiffNode (TNode *node, char param)
                         , node->data, node);
     }
 
-    OptimizeNode (&result, param);
+    while (OptimizeNode (&result, param)) ;
 
     if (result)
         PrintDiff (node, result, param);
 
     return result;
+}
+
+static int Fact(int n){
+     return (n == 0) || (n == 1) ? 1 : n * Fact (n-1);
+}
+
+int McLaurinTree (Tree* tree, char param, int degree)
+{
+    OpenTexFile ("Result.tex", "wt");
+    PrintInitalTree (tree);
+
+    double val  = 0;
+    IsConstantNode (GetRoot (tree), &val, '\0');
+    printf ("%lg + ", val);
+
+    Tree *res_tree = (Tree*) calloc (1, sizeof (Tree));
+    if (!res_tree)
+    {
+        LOG_ERROR ("CREATE TREE FAILED\n");
+        return CREATE_TREE_ERR;
+    }
+
+    res_tree->root = DiffNode (tree->root, param);
+    TreeOk (res_tree);
+    OptimizeTree (res_tree, param);
+
+    for (int curr_deg = 0;
+         curr_deg < degree;
+         curr_deg++)
+    {
+        PrintInitalTree (res_tree);
+
+        IsConstantNode (GetRoot (res_tree), &val, '\0');
+        if (!IS_EQ_APPROX (val, 0))
+        {
+            printf ("(%lg)x^%d + ", val / Fact (curr_deg + 1), curr_deg + 1);
+        }
+
+        TNode *old_tree = res_tree->root;
+        res_tree->root  = DiffNode (res_tree->root, param);
+        TreeOk (res_tree);
+        OptimizeTree (res_tree, param);
+
+        DestructNode (old_tree);
+    }
+
+    CloseTexFile ();
+
+    printf ("o(x^%d)\n", degree);
+    DestructTree (res_tree);
+    return 0;
 }
 
 int OptimizeTree (Tree *tree, char param)
@@ -305,10 +355,52 @@ int OptimizeTree (Tree *tree, char param)
     return OK;
 }
 
+static int OptimizeDoubleNeg (TNode **node)
+{
+    if ((*node)->type != TYPE_OP || (int) (*node)->data != '*')
+    {
+        return 0;
+    }
+
+    if ((int) (*node)->left->data != '*' && (int) (*node)->right->data != '*')
+    {
+        return 0;
+    }
+
+    if ((int) (*node)->left->data == -1)
+    {
+        if ((int) (*node)->right->left->data == -1)
+        {
+            TNode *old_ptr = *node;
+            (*node)->right->right->parent = old_ptr->parent;
+            *node = (*node)->right->right;
+            DestructNode (old_ptr->left);
+            DestructNode (old_ptr->right->left);
+            free (old_ptr->right);
+            free (old_ptr);
+            return 1;
+        }
+
+        if ((int) (*node)->right->right->data == -1)
+        {
+            TNode *old_ptr = *node;
+            (*node)->right->left->parent = old_ptr->parent;
+            *node = (*node)->right->left;
+            DestructNode (old_ptr->left);
+            DestructNode (old_ptr->right->right);
+            free (old_ptr->right);
+            free (old_ptr);
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
 int OptimizeNode (TNode **node, char param)
 {
     // printf ("Starting Optim: node: %p; data = %lg; type = %d; left = %p; right = %p; parent = %p\n",
-    //          *node, (*node)->data, (*node)->type, (*node)->left, (*node)->right, (*node)->parent);
+    //         *node, (*node)->data, (*node)->type, (*node)->left, (*node)->right, (*node)->parent);
 
     double val = 0;
     int isConst = IsConstantNode (*node, &val, param);
@@ -378,7 +470,7 @@ int OptimizeNode (TNode **node, char param)
                         break;
                     }
                     else if (IS_EQ_APPROX((*node)->left->data,  1) &&
-                            (char) (*node)->data == '+')
+                            (char) (*node)->data == '*')
                     {
                         TNode *old_ptr = *node;
                         (*node)->right->parent = old_ptr->parent;
@@ -386,6 +478,10 @@ int OptimizeNode (TNode **node, char param)
                         DestructNode (old_ptr->left);
                         free (old_ptr);
                         break;
+                    }
+                    else
+                    {
+                        OptimizeDoubleNeg (node);
                     }
                     break;
                 default:
@@ -487,8 +583,13 @@ int IsConstantNode (TNode *node, double *value, char param)
             break;
         case TYPE_VAR:
             if ((char) node->data == param)
+            {
                 return 0;
-            return 1;
+            }
+            else
+            {
+                return 1;
+            }
         case TYPE_CONST:
             *value = node->data;
             return 1;

@@ -47,9 +47,9 @@ const char *Greek[] =
     "\\Omega", "\\omega"
 };
 
-void OpenTexFile (const char *name)
+void OpenTexFile (const char *name, const char *mode)
 {
-    TexFile = fopen (name, "wt");
+    TexFile = fopen (name, mode);
     if (!TexFile)
     {
         LOG_ERROR ("Cannot open TexFile, name = %s\n",
@@ -92,6 +92,7 @@ void PrintInitalTree (Tree *tree)
 {
     fprintf (TexFile, "\\textbf{Глава 1. Производная сложной функции}\n\n"
                         "Задача: найти производную функции:\n\\[");
+
     PrintNodeTex (GetRoot (tree));
 
     fprintf (TexFile, "\\]\n\nПриступим!\n\\\\\n");
@@ -101,6 +102,8 @@ void PrintInitalTree (Tree *tree)
 
 void PrintDiff (TNode *before, TNode *after, char param)
 {
+    if (!TexFile) return;
+
     int   greek_num    = 0;
     TNode **long_nodes = (TNode **) calloc (32, sizeof (TNode *));
 
@@ -156,8 +159,22 @@ void PrintNodeTex (TNode *node, TNode **long_nodes, int *greek_num)
         int children = GetChildrenCount (node);
         if (children > Max_Len)
         {
-            long_nodes[*greek_num] = GetChildWithLessChildrenThan (node, Max_Len);
-            (*greek_num)++;
+            TNode *short_node = GetChildWithLessChildrenThan (node, Max_Len);
+            int a_copy = 0;
+
+            for (int check_node = 0; check_node < *greek_num; check_node++)
+            {
+                if (NodesEqual (long_nodes[check_node], short_node))
+                {
+                    a_copy = 1;
+                    break;
+                }
+            }
+            if (!a_copy)
+            {
+                long_nodes[*greek_num] = short_node;
+                (*greek_num)++;
+            }
         }
     }
 

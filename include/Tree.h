@@ -5,13 +5,14 @@
 #include <string.h>
 #include <stdint.h>
 #include "Logs.h"
+#include <math.h>
 
 #define TYPE_SPEC "%lf"
 typedef double tree_elem;
 
 const double Epsilon = 1e-5;
 
-#define IS_EQ_APPROX(a, b) (a - b < Epsilon)
+#define IS_EQ_APPROX(a, b) (abs(a - b) < Epsilon)
 
 struct TNode
 {
@@ -32,6 +33,14 @@ enum EXIT_CODES
     OK          = 0x0000,
     BAD_PTR     = 0x0001,
     ORPHAN_NODE = 0x0002,
+};
+
+enum TYPES
+{
+    TYPE_CONST = 0x001,
+    TYPE_VAR   = 0x002,
+    TYPE_OP    = 0x003,
+    TYPE_UNARY = 0x004,
 };
 
 typedef void (*NodeAction) (TNode *);

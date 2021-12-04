@@ -25,13 +25,14 @@ int main (int argc, const char **argv)
     char ans[2] = {};
     scanf ("%1[0-9]", ans);
 
+    while (getc (stdin) != '\n');
+
     switch (*ans)
     {
         case '1':
             {
                 printf ("А по какой переменной?\n\t");
                 scanf ("%1[a-z]", ans);
-                printf ("ans is %c (%d)\n", *ans, *ans);
 
                 Tree *diffed = DiffTree (diff_tree, *ans);
                 printf ("Чекай ответ в файлике\n");

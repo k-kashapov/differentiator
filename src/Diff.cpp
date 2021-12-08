@@ -32,7 +32,7 @@ static int ProcessAlNum (const char *target, TNode **curr_node, size_t *curr)
         }
         else
         {
-            printf ("word scanned = %s\n", word);
+            // printf ("word scanned = %s\n", word);
             int word_hash = DisplacementHash (word, (size_t) bytes_read);
 
             (*curr_node)->data = (tree_elem) (word_hash);
@@ -47,7 +47,7 @@ static int ProcessAlNum (const char *target, TNode **curr_node, size_t *curr)
         int bytes_read = 0;
 
         int read = sscanf (target, "%lf%n", &const_value, &bytes_read);
-        printf ("Const value read = %lf\n", const_value);
+        // printf ("Const value read = %lf\n", const_value);
         if (!read)
         {
             LOG_ERROR ("Const value read err: target = %s",
@@ -115,7 +115,7 @@ static int ProcessSymbol (const char *target, TNode **curr_node)
 
 static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
 {
-    printf ("---------\ncurr char is %c (%d)\n", *target, *target);
+    // printf ("---------\ncurr char is %c (%d)\n", *target, *target);
     if (isalnum (*target))
     {
         int alnum_err = ProcessAlNum (target, curr_node, curr);
@@ -131,7 +131,7 @@ static int ProcessChar (const char *target, TNode **curr_node, size_t *curr)
         return sym_error;
     }
 
-    printf ("curr data is %c (%lf)\n", (int)(*curr_node)->data, (*curr_node)->data);
+    // printf ("curr data is %c (%lf)\n", (int)(*curr_node)->data, (*curr_node)->data);
     return OK;
 }
 
@@ -145,7 +145,7 @@ int BuildTreeFromFile (Config *io_config, Tree *tree)
     }
 
     size_t src_len = strlen (source);
-    printf ("Length = %lu\n", src_len);
+    // printf ("Length = %lu\n", src_len);
 
     TNode *curr_node = GetRoot (tree);
 
@@ -255,7 +255,17 @@ TNode *DiffNode (TNode *node, char param)
                     result = DIV (SUB (MUL (DL, CR), MUL (DR, CL)), POW (CR, CN (2)));
                     break;
                 case '^':
-                    result = MUL (POW (CL, CR), ADD (MUL (DR, DLN (CL)), DIV (MUL (CR, DL), CL)));
+                    {
+                        double val = 0;
+                        if (IsConstantNode (node->right, &val, param))
+                        {
+                            result = MUL(MUL (CR, POW (CL, CN (val - 1))), DL);
+                        }
+                        else
+                        {
+                            result = MUL (POW (CL, CR), ADD (MUL (DR, DLN (CL)), DIV (MUL (CR, DL), CL)));
+                        }
+                    }
                     break;
                 case SIN:
                     result = MUL (DL, DCOS (CL));
@@ -355,6 +365,15 @@ int OptimizeTree (Tree *tree, char param)
     return OK;
 }
 
+#define DOUBLE_NEG(first, second)                                               \
+    TNode *old_ptr = *node;                                                     \
+    (*node)->right->first->parent = old_ptr->parent;                            \
+    *node = (*node)->right->first;                                              \
+    DestructNode (old_ptr->left);                                               \
+    DestructNode (old_ptr->right->second);                                      \
+    free (old_ptr->right);                                                      \
+    free (old_ptr)
+
 static int OptimizeDoubleNeg (TNode **node)
 {
     if ((*node)->type != TYPE_OP || (int) (*node)->data != '*')
@@ -371,25 +390,13 @@ static int OptimizeDoubleNeg (TNode **node)
     {
         if ((int) (*node)->right->left->data == -1)
         {
-            TNode *old_ptr = *node;
-            (*node)->right->right->parent = old_ptr->parent;
-            *node = (*node)->right->right;
-            DestructNode (old_ptr->left);
-            DestructNode (old_ptr->right->left);
-            free (old_ptr->right);
-            free (old_ptr);
+            DOUBLE_NEG (right, left);
             return 1;
         }
 
         if ((int) (*node)->right->right->data == -1)
         {
-            TNode *old_ptr = *node;
-            (*node)->right->left->parent = old_ptr->parent;
-            *node = (*node)->right->left;
-            DestructNode (old_ptr->left);
-            DestructNode (old_ptr->right->right);
-            free (old_ptr->right);
-            free (old_ptr);
+            DOUBLE_NEG (left, right);
             return 1;
         }
     }
@@ -610,7 +617,7 @@ int DisplacementHash (const void *data, size_t len)
     {
         result += src[i] << i * 8;
     }
-    printf ("hash = %#x\n", (unsigned int) result);
+    // printf ("hash = %#x\n", (unsigned int) result);
 
     return result;
 }
